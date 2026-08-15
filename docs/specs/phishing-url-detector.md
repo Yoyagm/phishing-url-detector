@@ -1,7 +1,8 @@
 # Explainable Phishing URL Detection — Design Specification
 
 > Written in English because this file ships in the public repository.
-> Status: draft for approval. Date: 2026-08-14.
+> Status: **delivered**. Written 2026-08-14, completed the same day.
+> All milestones closed; see "Outcome" at the end for what changed against this design.
 
 ## Problem
 
@@ -242,26 +243,26 @@ tests/           test_canonicalize.py test_features.py test_no_host_leakage.py
 
 ## Milestones
 
-- [ ] **H1 — Data ingestion + canonicalization + frozen PSL.**
+- [x] **H1 — Data ingestion + canonicalization + frozen PSL.**
       `make data && uv run pytest tests/test_canonicalize.py` — all edge cases green.
-- [ ] **H2 — Leak audit, both leaks reproduced with numbers and figures.**
+- [x] **H2 — Leak audit, both leaks reproduced with numbers and figures.**
       `uv run python scripts/leak_audit.py` prints both tables, writes figures;
       `pytest tests/test_leak_audit.py` asserts the rule reaches ≥ 0.99 accuracy and that
       legitimate-rows-with-path == 0.
-- [ ] **H3 — Host-only feature extractor + leakage guard.**
+- [x] **H3 — Host-only feature extractor + leakage guard.**
       `uv run pytest tests/test_features.py tests/test_no_host_leakage.py`.
-- [ ] **H4 — Training with grouped split + internal evaluation.**
+- [x] **H4 — Training with grouped split + internal evaluation.**
       `make train` writes `models/model.txt` and `reports/metrics_internal.json`
       containing ROC-AUC, PR-AUC, recall@FPR1 %.
-- [ ] **H5 — OOD + temporal evaluation with dedup and conflict handling.**
+- [x] **H5 — OOD + temporal evaluation with dedup and conflict handling.**
       `make eval-ood` writes `reports/metrics_ood.json`; `pytest tests/test_no_set_overlap.py`.
-- [ ] **H6 — Model export + JS scorer + JS TreeSHAP + parity.**
+- [x] **H6 — Model export + JS scorer + JS TreeSHAP + parity.**
       `uv run pytest tests/test_parity_features.py tests/test_parity_shap.py` — ≥ 500 URLs, Δ < 1e-12.
-- [ ] **H7 — Static demo page in `docs/`.**
+- [x] **H7 — Static demo page in `docs/`.**
       Loads with no network calls, scores a known URL, renders SHAP; screenshot captured.
-- [ ] **H8 — FastAPI service + Docker.**
+- [x] **H8 — FastAPI service + Docker.**
       `uv run pytest tests/test_api.py`; `docker build` succeeds and a `curl` to `/v1/score` returns a verdict.
-- [ ] **H9 — README + LaTeX PDF from real runs + publish repo and Pages.**
+- [x] **H9 — README + LaTeX PDF from real runs + publish repo and Pages.**
       `make paper` produces `paper/report.pdf`; the live Pages URL returns HTTP 200.
 
 ## Misuse note
@@ -270,3 +271,41 @@ This is a defensive, assistive classifier with a measured error rate, not an aut
 It scores host names only: it cannot resolve shorteners, cannot see page content, and will
 miss phishing hosted on compromised legitimate domains — a case shown to exist in the data
 (321 PhishTank hosts sit in Tranco's top 1M). The README and the report state this plainly.
+
+
+---
+
+## Outcome
+
+All nine milestones closed on 2026-08-14. `uv run pytest` reports **113 passed**.
+Live demo: <https://yoyagm.github.io/phishing-url-detector/>
+
+### Where the build departed from this design
+
+| Design said | What was built | Why |
+|---|---|---|
+| Parity tolerance 1e-6 | **1e-12**, and the measured worst case is 8.9e-16 | `shap`'s own additivity residual on this stack measures 5e-16, so 1e-6 was three orders of magnitude too loose to be a real check. |
+| ~25 features | **51** | The TLD one-hot expands to 26 columns; the other 25 are as specified. |
+| PSL used as one rule set | **ICANN and private sections split** | Grouping under the private section would make `evil.vercel.app` and `nice.vercel.app` separate groups, letting the model be rewarded for memorising a hosting provider. Grouping uses ICANN; the private section became the `is_platform_hosted` feature instead. |
+| `explain.py` for SHAP wrappers | Written, and produces global importance | Local explanation lives in `api.py` and `engine.js` where it is used. |
+| — | `?url=` and `?theme=` on the demo | Shareable scan links, and the mechanism that captures the report figures reproducibly. |
+
+### Assumptions that turned out to be wrong or imprecise
+
+- **A5 (model size).** Estimated 3.35 MB from an unpruned dump; the pruned artifact is **0.86 MB**.
+- **Leak-1 count.** The pre-design estimate of 815 phishing rows at index ≥ 99.9 came from a naive
+  `awk` split that mis-parsed quoted fields. pandas gives **786**; accuracy 0.9967, not 0.9965.
+- **A2 (host-level signal).** Held: ROC-AUC 0.9372 out of distribution. The design allowed for the
+  possibility that it would not.
+
+### Assumptions that held
+
+A1 (temporal cutoff — 61,201 PhishTank rows qualify), A3 (Tranco as benign proxy after removing the
+42,005 overlapping hosts), A4 (frozen PSL keeps the two languages in agreement — verified exactly).
+
+### Not delivered
+
+- **Licensing verification of the four data sources was never completed** (the research agent that
+  was to do it did not run). Mitigated by choosing the conservative option regardless: no raw data is
+  committed, and `scripts/fetch_data.py` fetches everything at build time.
+- Multi-model agent delegation, which the environment did not support in this session.
