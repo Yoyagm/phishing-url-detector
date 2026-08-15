@@ -1,0 +1,10 @@
+{
+  "n_urls": 567,
+  "host_mismatches": 0,
+  "feature_values": 28917,
+  "feature_max_delta": 0.0,
+  "raw_max_delta": 0.0,
+  "shap_values": 28917,
+  "shap_max_delta": 8.881784197001252e-16,
+  "additivity_max_delta": 1.9273471707492718e-13
+}

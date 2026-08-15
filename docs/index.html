@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phishing URL Detector — explainable, in your browser</title>
+<meta name="description" content="A host-name phishing classifier that scores and explains predictions entirely client-side, with no backend. Honest metrics, measured leakage, exact TreeSHAP.">
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb;
+    --plane: #f9f9f7;
+    --raised: #ffffff;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --line: #c3c2b7;
+    --blue: #2a78d6;
+    --red: #d03b3b;
+    --good: #0ca30c;
+    --ring: rgba(11, 11, 11, 0.10);
+  }
+  /* Dark values are declared under both scopes: the media query follows the OS
+     setting, the attribute scope lets ?theme= win in either direction. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface: #1a1a19;
+      --plane: #0d0d0d;
+      --raised: #232322;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --line: #383835;
+      --blue: #3987e5;
+      --red: #e66767;
+      --good: #0ca30c;
+      --ring: rgba(255, 255, 255, 0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --plane: #0d0d0d;
+    --raised: #232322;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --line: #383835;
+    --blue: #3987e5;
+    --red: #e66767;
+    --good: #0ca30c;
+    --ring: rgba(255, 255, 255, 0.10);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--plane);
+    color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 32px 20px 64px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header { margin-bottom: 26px; }
+  h1 { font-size: 25px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.015em; }
+  .sub { color: var(--ink-2); margin: 0 0 14px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 7px; }
+  .badge {
+    font-size: 12px; padding: 3px 9px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--ring); color: var(--ink-2);
+  }
+  .badge b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--ring);
+    border-radius: 12px; padding: 18px; margin-bottom: 16px;
+  }
+  .row { display: flex; gap: 9px; }
+  input[type=text] {
+    flex: 1; min-width: 0; padding: 11px 13px; font: inherit;
+    background: var(--raised); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  input[type=text]:focus { outline: 2px solid var(--blue); outline-offset: -1px; border-color: var(--blue); }
+  button {
+    padding: 11px 20px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--blue); color: #fff; border: 0; border-radius: 8px;
+  }
+  button:disabled { opacity: .55; cursor: default; }
+  .examples { margin-top: 11px; font-size: 13px; color: var(--muted); }
+  .examples button {
+    background: none; color: var(--blue); border: 0; padding: 2px 4px;
+    font-size: 13px; font-weight: 500; text-decoration: underline; cursor: pointer;
+  }
+
+  .verdict { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-weight: 700; font-size: 15px; padding: 5px 13px; border-radius: 999px;
+    border: 1.5px solid currentColor;
+  }
+  .chip.phish { color: var(--red); }
+  .chip.legit { color: var(--good); }
+  .prob { font-size: 27px; font-weight: 700; letter-spacing: -0.02em; }
+  .host { color: var(--ink-2); font-size: 13px; word-break: break-all; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+       color: var(--muted); margin: 20px 0 10px; font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  td { padding: 4px 0; vertical-align: middle; }
+  td.name { width: 40%; color: var(--ink-2); padding-right: 10px; }
+  td.name b { color: var(--ink); font-weight: 600; }
+  td.val { width: 62px; text-align: right; padding-right: 12px;
+           color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+  .track { position: relative; height: 17px; background: var(--grid); border-radius: 3px; }
+  .track .zero { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+  .bar { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; }
+  .bar.pos { background: var(--red); left: 50%; }
+  .bar.neg { background: var(--blue); right: 50%; }
+  td.shap { width: 74px; text-align: right; font-variant-numeric: tabular-nums;
+            font-size: 12.5px; color: var(--ink-2); padding-left: 10px; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 9px; }
+  .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+
+  details { margin-top: 14px; }
+  summary { cursor: pointer; font-size: 13px; color: var(--blue); }
+  details table { margin-top: 10px; }
+  details td { border-top: 1px solid var(--grid); padding: 3px 0; }
+
+  .note { font-size: 13px; color: var(--ink-2); }
+  .note b { color: var(--ink); }
+  footer { margin-top: 26px; font-size: 12.5px; color: var(--muted); }
+  footer a { color: var(--blue); }
+  .err { color: var(--red); font-size: 13.5px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Phishing URL detector</h1>
+    <p class="sub">
+      Scores a host name and shows exactly why. The model, the feature extraction and the
+      SHAP explanation all run in this tab — nothing is sent anywhere.
+    </p>
+    <div class="badges">
+      <span class="badge">ROC-AUC <b id="b-auc">—</b> out of distribution</span>
+      <span class="badge">Recall <b id="b-recall">—</b> at 1% false positives</span>
+      <span class="badge"><b id="b-trees">—</b> trees · <b id="b-feat">—</b> features</span>
+      <span class="badge">0 backend calls</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <input type="text" id="url" placeholder="Paste a URL or host name…"
+             autocomplete="off" spellcheck="false" aria-label="URL to score">
+      <button id="scan" disabled>Loading…</button>
+    </div>
+    <div class="examples">
+      Try:
+      <button data-url="https://appleid.apple.com.secure-login-verify.xyz/signin">brand in a subdomain</button> ·
+      <button data-url="https://login-secure-account-update.tk">keyword stuffing</button> ·
+      <button data-url="https://192.168.44.9/wp-admin/paypal">raw IP host</button> ·
+      <button data-url="https://www.bbc.co.uk">a real site</button>
+    </div>
+    <p id="error" class="err hidden"></p>
+  </div>
+
+  <div class="card hidden" id="result">
+    <div class="verdict">
+      <span class="chip" id="chip"></span>
+      <span class="prob" id="prob"></span>
+    </div>
+    <div class="host" id="host"></div>
+
+    <h2>Why — exact SHAP contributions</h2>
+    <table><tbody id="shap"></tbody></table>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--red)"></span>pushes toward phishing</span>
+      <span><span class="swatch" style="background:var(--blue)"></span>pushes toward legitimate</span>
+    </div>
+
+    <details>
+      <summary>All feature values</summary>
+      <table><tbody id="features"></tbody></table>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">What this is not</h2>
+    <p class="note">
+      A support classifier with a <b>measured</b> error rate, not an authority. It reads the
+      host name only: it cannot resolve shorteners like <code>bit.ly</code>, cannot see page
+      content, and will miss phishing hosted on compromised legitimate domains — 321 hosts in
+      the evaluation data are exactly that case. At its 1&nbsp;% false-positive operating point
+      it catches roughly <b id="n-recall">—</b> of phishing, so it misses the rest. Do not
+      treat a “legitimate” verdict as safety.
+    </p>
+  </div>
+
+  <footer>
+    Trained on PhiUSIIL (UCI id&nbsp;967) after removing two measured label leaks; evaluated
+    against PhishTank hosts submitted after the training data was collected.
+    Phishing maps to MITRE ATT&amp;CK <b>T1566</b> / <b>T1566.002</b>.
+    <a href="https://github.com/Yoyagm/phishing-url-detector">Source and full report on GitHub</a>.
+  </footer>
+
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

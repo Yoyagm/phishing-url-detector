@@ -1,0 +1,74 @@
+{
+  "training": {
+    "unique_hosts": 219036,
+    "dropped_conflicting_hosts": 58,
+    "registrable_domains": 175451,
+    "n_features": 51,
+    "params": {
+      "objective": "binary",
+      "num_leaves": 31,
+      "learning_rate": 0.05,
+      "feature_fraction": 0.9,
+      "bagging_fraction": 0.8,
+      "bagging_freq": 5,
+      "min_data_in_leaf": 50,
+      "verbose": -1,
+      "seed": 42,
+      "num_threads": 4
+    },
+    "num_boost_round": 300
+  },
+  "internal": {
+    "name": "Internal hold-out",
+    "n": 50332,
+    "n_phishing": 23424,
+    "roc_auc": 0.9186758425833806,
+    "pr_auc": 0.9345205629148483,
+    "recall_at_fpr_1pct": 0.725922131147541,
+    "threshold_at_fpr_1pct": 0.6719115434956184,
+    "recall_at_fpr_01pct": 0.6346482240437158,
+    "threshold_at_fpr_01pct": 0.9434687535816632,
+    "accuracy_at_operating_point": 0.8671024397997298,
+    "precision_at_operating_point": 0.9844265616858682,
+    "f1_at_operating_point": 0.8356389905889869,
+    "confusion": {
+      "tn": 26639,
+      "fp": 269,
+      "fn": 6420,
+      "tp": 17004
+    }
+  },
+  "ood": {
+    "name": "OOD + temporal",
+    "n": 131396,
+    "n_phishing": 31396,
+    "roc_auc": 0.9372024471270224,
+    "pr_auc": 0.9078246021961507,
+    "recall_at_fpr_1pct": 0.705472034654096,
+    "threshold_at_fpr_1pct": 0.9767933512611859,
+    "recall_at_fpr_01pct": 0.5077716906612307,
+    "threshold_at_fpr_01pct": 0.9963247567934793,
+    "accuracy_at_operating_point": 0.9220219793601023,
+    "precision_at_operating_point": 0.9568429237947123,
+    "f1_at_operating_point": 0.81215165737753,
+    "confusion": {
+      "tn": 99001,
+      "fp": 999,
+      "fn": 9247,
+      "tp": 22149
+    }
+  },
+  "ood_composition": {
+    "tranco_hosts": 1000000,
+    "phishtank_hosts_total": 37244,
+    "phishtank_hosts_after_cutoff": 31726,
+    "removed_benign_seen_in_training": 42005,
+    "removed_phishing_seen_in_training": 121,
+    "removed_conflicting_both_lists": 267,
+    "final_benign": 100000,
+    "final_phishing": 31396,
+    "openphish_hosts": 260
+  },
+  "openphish_detection_rate_at_ood_threshold": 0.5852842809364549,
+  "recall_drop_internal_to_ood": 0.02045009649344498
+}

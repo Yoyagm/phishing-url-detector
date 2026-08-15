@@ -1,0 +1,17 @@
+{
+  "Hyphen ratio": 0.0642983260287098,
+  "Longest consonant run": 0.07509090802721355,
+  "Digit ratio": 0.08068938222838588,
+  "Mean label length": 0.09994396042298245,
+  "Hyphens": 0.10885488252826078,
+  "Vowel ratio": 0.12700221942956777,
+  "Multi-level suffix (.co.uk)": 0.14067060873011678,
+  "Suffix length": 0.15996426737888725,
+  "Host length": 0.16795331684579634,
+  "Character entropy (host)": 0.1995735451227172,
+  "Platform-hosted subdomain": 0.32545157419209253,
+  "Subdomain length": 0.40007753746176855,
+  "Top-level domain": 0.43456786067939834,
+  "Digits": 0.4670161929720824,
+  "Subdomain depth": 0.7374288965295323
+}

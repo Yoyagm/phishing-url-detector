@@ -1,0 +1,49 @@
+{
+  "dataset": {
+    "rows": 235795,
+    "phishing": 100945,
+    "legitimate": 134850
+  },
+  "leak_1_url_similarity_index": {
+    "legitimate_at_or_above_99_9": 134850,
+    "phishing_at_or_above_99_9": 786,
+    "single_rule": {
+      "accuracy": 0.9966665959837995,
+      "recall_phishing": 0.9922135816533756,
+      "specificity": 1.0
+    }
+  },
+  "leak_2_collection_artefact": {
+    "profile": {
+      "legitimate": {
+        "n": 134850,
+        "starts_https_pct": 100.0,
+        "host_starts_www_pct": 100.0,
+        "has_path_pct": 0.0,
+        "has_query_pct": 0.0,
+        "has_at_pct": 0.0,
+        "mean_url_length": 27.228609566184648
+      },
+      "phishing": {
+        "n": 100945,
+        "starts_https_pct": 48.7354499975234,
+        "host_starts_www_pct": 41.35519342216058,
+        "has_path_pct": 28.4154737728466,
+        "has_query_pct": 6.0845014611917385,
+        "has_at_pct": 0.00990638466491654,
+        "mean_url_length": 46.238773589578486
+      }
+    },
+    "has_path_rule": {
+      "accuracy": 0.693543120083123,
+      "recall_phishing": 0.284154737728466,
+      "specificity": 1.0
+    }
+  },
+  "lightgbm_random_split_accuracy": {
+    "all_precomputed_features": 1.0,
+    "without_url_similarity_index": 0.999978795139846,
+    "without_content_columns": 0.9973281876206026,
+    "naive_raw_url_lexical": 0.9951228821645921
+  }
+}
