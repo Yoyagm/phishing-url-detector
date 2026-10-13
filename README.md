@@ -134,7 +134,7 @@ legitimate site, which is the expensive error for anyone who would deploy this.
 | Precision at operating point | 98.4 % | 95.7 % |
 | False positives | 269 / 26,908 | 999 / 100,000 |
 
-**OpenPhish live feed:** 58.5 % of 260 hosts detected at the same operating point. These URLs were
+**OpenPhish live feed:** 58.5 % (175 of 299 feed URLs, which resolve to 260 distinct hosts) detected at the same operating point. These URLs were
 live on the day of the capture and appear in no training data.
 
 ![ROC and precision–recall](paper/figures/roc_pr_curves.png)
